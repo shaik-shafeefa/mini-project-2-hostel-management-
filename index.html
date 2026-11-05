@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>College Hostel Management System</title>
+    <style>
+        * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 0; }
+        body { background: #f0f2f5; color: #1e293b; padding-bottom: 40px; }
+        header { background: #0f172a; color: white; padding: 24px 20px; text-align: center; }
+        header h1 { font-size: 24px; margin-bottom: 6px; }
+        header p { color: #94a3b8; font-size: 14px; }
+        .container { max-width: 1100px; margin: 24px auto; padding: 0 16px; display: flex; flex-direction: column; gap: 24px; }
+        .card { background: white; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .card h2 { font-size: 18px; margin-bottom: 16px; border-bottom: 2px solid #f1f5f9; padding-bottom: 8px; }
+        .row { display: flex; gap: 20px; flex-wrap: wrap; }
+        .half { flex: 1; min-width: 300px; }
+        .grid-rooms { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; }
+        .room-card { padding: 14px; border-radius: 6px; border: 1px solid #e2e8f0; background: #ffffff; }
+        .room-card.Available { border-left: 6px solid #10b981; }
+        .room-card.Full { border-left: 6px solid #ef4444; }
+        .room-title { font-weight: 700; font-size: 16px; margin-bottom: 4px; }
+        .room-meta { font-size: 13px; color: #64748b; margin-top: 2px; }
+        .form-group { margin-bottom: 12px; }
+        .form-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+        .form-group input, .form-group select { width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 14px; }
+        .form-group input:focus, .form-group select:focus { outline: 2px solid #2563eb; }
+        .btn { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 500; }
+        .btn-primary { background: #2563eb; color: white; }
+        .btn-secondary { background: #64748b; color: white; }
+        .btn-success { background: #16a34a; color: white; width: 100%; }
+        .btn-danger { background: #dc2626; color: white; padding: 4px 8px; font-size: 12px; }
+        .btn-edit { background: #eab308; color: black; padding: 4px 8px; font-size: 12px; margin-right: 4px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { text-align: left; padding: 10px; border-bottom: 1px solid #e2e8f0; font-size: 14px; }
+        th { background: #f8fafc; font-weight: 600; color: #475569; }
+        .badge { display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+        .badge-green { background: #dcfce7; color: #15803d; }
+        .badge-gray { background: #f1f5f9; color: #64748b; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>College Hostel Management System</h1>
+        <p>Manage Students, Allocate & Vacate Rooms, Monitor Occupancy</p>
+    </header>
+
+    <main class="container">
+        <!-- Room Occupancy Tracker -->
+        <section class="card">
+            <h2>Room Occupancy Status</h2>
+            <div id="room-list" class="grid-rooms"></div>
+        </section>
+
+        <div class="row">
+            <!-- Student Form -->
+            <section class="card half">
+                <h2 id="form-title">Register Student</h2>
+                <form id="student-form">
+                    <input type="hidden" id="student_id">
+                    <div class="form-group">
+                        <label>Name:</label>
+                        <input type="text" id="name" placeholder="Full Name" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Roll Number:</label>
+                        <input type="text" id="roll_no" placeholder="e.g. 24CSE001" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Branch:</label>
+                        <input type="text" id="branch" placeholder="e.g. CSE, ECE" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Student Phone:</label>
+                        <input type="text" id="phone" placeholder="10-digit phone" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Parent Phone:</label>
+                        <input type="text" id="parent_phone" placeholder="10-digit phone" required>
+                    </div>
+                    <button type="submit" id="save-btn" class="btn btn-primary">Save Student</button>
+                    <button type="button" id="cancel-btn" class="btn btn-secondary" style="display:none;" onclick="resetForm()">Cancel</button>
+                </form>
+            </section>
+
+            <!-- Room Allocation Form -->
+            <section class="card half">
+                <h2>Allocate Room</h2>
+                <form id="allocation-form">
+                    <div class="form-group">
+                        <label>Select Unallocated Student:</label>
+                        <select id="alloc-student" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Select Available Room:</label>
+                        <select id="alloc-room" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Allocation Date:</label>
+                        <input type="date" id="alloc-date" required>
+                    </div>
+                    <button type="submit" class="btn btn-success">Allocate Room</button>
+                </form>
+            </section>
+        </div>
+
+        <!-- Student Records Table -->
+        <section class="card">
+            <h2>Student Directory</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Roll No</th>
+                        <th>Branch</th>
+                        <th>Phone</th>
+                        <th>Allocated Room</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="student-table-body"></tbody>
+            </table>
+        </section>
+    </main>
+
+    <script>
+        const API_URL = 'http://localhost:3000/api';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('alloc-date').valueAsDate = new Date();
+            loadDashboard();
+        });
+
+        async function loadDashboard() {
+            await Promise.all([loadRooms(), loadStudents()]);
+        }
+
+        async function loadRooms() {
+            const res = await fetch(`${API_URL}/rooms`);
+            const rooms = await res.json();
+
+            const container = document.getElementById('room-list');
+            const select = document.getElementById('alloc-room');
+            container.innerHTML = '';
+            select.innerHTML = '<option value="">-- Choose Room --</option>';
+
+            rooms.forEach(r => {
+                container.innerHTML += `
+                    <div class="room-card ${r.status}">
+                        <div class="room-title">${r.block_name} - Room ${r.room_no}</div>
+                        <div class="room-meta">Capacity: ${r.capacity}</div>
+                        <div class="room-meta">Occupied: <strong>${r.occupied} / ${r.capacity}</strong></div>
+                        <div class="room-meta">Status: <strong>${r.status}</strong></div>
+                    </div>
+                `;
+                if (r.occupied < r.capacity) {
+                    select.innerHTML += `<option value="${r.room_id}">${r.block_name} - ${r.room_no} (${r.capacity - r.occupied} slot(s) free)</option>`;
+                }
+            });
+        }
+
+        async function loadStudents() {
+            const res = await fetch(`${API_URL}/students`);
+            const students = await res.json();
+
+            const tbody = document.getElementById('student-table-body');
+            const selectStudent = document.getElementById('alloc-student');
+            tbody.innerHTML = '';
+            selectStudent.innerHTML = '<option value="">-- Choose Student --</option>';
+
+            students.forEach(s => {
+                const hasRoom = s.allocation_status === 'Active';
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${s.student_id}</td>
+                        <td>${s.name}</td>
+                        <td>${s.roll_no}</td>
+                        <td>${s.branch}</td>
+                        <td>${s.phone}</td>
+                        <td>
+                            ${hasRoom ? `<span class="badge badge-green">${s.block_name} - Room ${s.room_no}</span>` : '<span class="badge badge-gray">Not Allocated</span>'}
+                        </td>
+                        <td>
+                            <button class="btn btn-edit" onclick='editStudent(${JSON.stringify(s)})'>Edit</button>
+                            ${hasRoom ? `<button class="btn btn-danger" onclick="vacateRoom(${s.allocation_id})">Vacate</button>` : ''}
+                        </td>
+                    </tr>
+                `;
+
+                if (!hasRoom) {
+                    selectStudent.innerHTML += `<option value="${s.student_id}">${s.name} (${s.roll_no})</option>`;
+                }
+            });
+        }
+
+        document.getElementById('student-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('student_id').value;
+            const studentData = {
+                name: document.getElementById('name').value,
+                roll_no: document.getElementById('roll_no').value,
+                branch: document.getElementById('branch').value,
+                phone: document.getElementById('phone').value,
+                parent_phone: document.getElementById('parent_phone').value,
+            };
+
+            const url = id ? `${API_URL}/students/${id}` : `${API_URL}/students`;
+            const method = id ? 'PUT' : 'POST';
+
+            const res = await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(studentData)
+            });
+
+            if (res.ok) {
+                resetForm();
+                loadDashboard();
+            } else {
+                const err = await res.json();
+                alert('Error: ' + err.error);
+            }
+        });
+
+        function editStudent(s) {
+            document.getElementById('form-title').innerText = 'Edit Student Details';
+            document.getElementById('student_id').value = s.student_id;
+            document.getElementById('name').value = s.name;
+            document.getElementById('roll_no').value = s.roll_no;
+            document.getElementById('branch').value = s.branch;
+            document.getElementById('phone').value = s.phone;
+            document.getElementById('parent_phone').value = s.parent_phone;
+            document.getElementById('cancel-btn').style.display = 'inline-block';
+        }
+
+        function resetForm() {
+            document.getElementById('student-form').reset();
+            document.getElementById('student_id').value = '';
+            document.getElementById('form-title').innerText = 'Register Student';
+            document.getElementById('cancel-btn').style.display = 'none';
+        }
+
+        document.getElementById('allocation-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const student_id = document.getElementById('alloc-student').value;
+            const room_id = document.getElementById('alloc-room').value;
+            const allocation_date = document.getElementById('alloc-date').value;
+
+            const res = await fetch(`${API_URL}/allocations`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ student_id, room_id, allocation_date })
+            });
+
+            if (res.ok) {
+                document.getElementById('allocation-form').reset();
+                document.getElementById('alloc-date').valueAsDate = new Date();
+                loadDashboard();
+            } else {
+                const err = await res.json();
+                alert('Allocation Failed: ' + err.error);
+            }
+        });
+
+        async function vacateRoom(allocation_id) {
+            if (!confirm('Are you sure you want to vacate this room?')) return;
+            const today = new Date().toISOString().split('T')[0];
+
+            const res = await fetch(`${API_URL}/allocations/vacate`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ allocation_id, vacate_date: today })
+            });
+
+            if (res.ok) {
+                loadDashboard();
+            } else {
+                const err = await res.json();
+                alert('Vacate Failed: ' + err.error);
+            }
+        }
+    </script>
+</body>
+</html>
